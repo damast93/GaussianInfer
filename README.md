@@ -2,7 +2,7 @@
 
 Proof of concept implementation for a Gaussian programming language with exact first-order conditioning, as described in ["Compositional Semantics for Probabilistic Programs with Exact Conditioning"](https://arxiv.org/abs/2101.11351). 
 
-We provide two implementations, one using Python+numpy, the other using F#+`MathNet.Numerics`.
+We provide two implementations, one using Python+`numpy`, the other using F#+`MathNet.Numerics`.
 
 # Initial example: Gaussian regression
 
@@ -31,7 +31,7 @@ plt.plot(xs,ypred)
 plt.show()
 ```
 
-![plot_regression](C:\Users\dario\Desktop\GaussianInfer\plot_regression.png)
+![Gaussian regression](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_regression.png)
 
 # Structure
 
@@ -54,6 +54,7 @@ type Infer =
     member Condition : rv * rv -> unit     // condition on equality
     member Marginals : rv list -> Gaussian // marginals of a list of variable
     member Mean : rv -> float              // mean of an rv
+    (...)
 ```
 
  The typed version of the Gaussian regression examples reads
@@ -88,13 +89,15 @@ let bayesian_regression_example() =
 
 # Implementation
 
-The Python implementation features a class `Gauss` which represents an affine-linear map with Gaussian noise. This is a morphism in the category **Gauss** described by [Fritz'20], and functions like `then` and `tensor` are provided to compose Gaussian maps. The class `Infer` represents the inference engine.
+The Python implementation features a class `Gauss` which represents an affine-linear map with Gaussian noise. This is a morphism in the category **Gauss** described by [[Fritz'20]](https://www.sciencedirect.com/science/article/abs/pii/S0001870820302656), and functions like `then` and `tensor` are provided to compose Gaussian maps like in a symmetric monoidal category. The class `Infer` represents the inference engine.
 
-In the F# implementation, we do not model full Gaussian maps but only distributions. For conditioning of Gaussians, we directly implement the formula from [Fritz'20] using the Moore-Penrose Pseudoinverse. Of course, in realistic code you don't really want to compute inverses.
+In the F# implementation, we do not model full Gaussian maps but only distributions. For conditioning of Gaussians, we directly implement the explicit formula from [Fritz'20] using the Moore-Penrose Pseudoinverse. Of course, in realistic code, you don't really want to compute inverses or Schur complements.
 
 # Further Examples
 
 ## Kálmán filter
+
+We implement a 1-dimensional [Kálmán filter](https://en.wikipedia.org/wiki/Kalman_filter) for predicting the movement of some object, say a plane, from noisy measurements. 
 
 ```python
 g = Infer()
@@ -120,9 +123,11 @@ plt.plot(xs,'ro')
 plt.plot([ g.mean(x[i]) for i in range(len(xs)) ],'g')
 ```
 
-
+![1D Kalman filter](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_kalman.png)
 
 ## Gaussian Process Regression (Kriging)
+
+We write [Gaussian process regression](https://en.wikipedia.org/wiki/Kriging) using the [rbf kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel):
 
 ```python
 # rbf kernel
@@ -136,7 +141,7 @@ def gp(xs, kernel):
 xs = np.linspace(-5, 5, 100)
 ys = g.from_dist(gp(xs, rbf))
 
-# add observations
+# condition exactly on observed datapoints
 observations = [(20,1.0), (40, 2.0), (60, 3.0), (80, 0.0)]
 for (i,yobs) in observations:
     g.condition(ys[i],yobs)
@@ -156,3 +161,4 @@ stds = np.array([ np.sqrt(np.abs(g.variance(y))) for y in ys ])
 plt.plot(xs, means + 3*stds, 'blue', xs, means - 3*stds, 'blue')
 ```
 
+![GP Regression](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_gp.png)
