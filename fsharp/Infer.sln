@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30907.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Infer", "Infer.fsproj", "{2B4DF614-327E-4FB4-8777-369149E45CCA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{2B4DF614-327E-4FB4-8777-369149E45CCA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B4DF614-327E-4FB4-8777-369149E45CCA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B4DF614-327E-4FB4-8777-369149E45CCA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B4DF614-327E-4FB4-8777-369149E45CCA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6738030B-FEDA-4423-82D4-DA4FB36C3B43}
+	EndGlobalSection
+EndGlobal
