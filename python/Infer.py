@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.linalg as linalg
 
 import Gaussian as Gauss
 

@@ -20,7 +20,6 @@ g.condition(y,z)
 print(g.marginals(x,y))
 
 
-
 #%% Bayesian regression
 
 g = Infer()
@@ -42,7 +41,7 @@ plt.plot(xs,ypred)
 
 plt.show()
 
-#%% Kalman filter
+#%% 1D-Kalman filter
 
 g = Infer()
 
@@ -65,3 +64,95 @@ for i in range(1,len(xs)):
 
 plt.plot(xs,'ro')
 plt.plot([ g.mean(x[i]) for i in range(len(xs)) ],'g')
+plt.show()
+
+#%% 2D-Kalman filter (airplane tracking)
+
+g = Infer()
+
+# some coordinates and times of observation
+posx  = [ 1.0, 2.0, 3.0, 4.0,   6.0, 5.5, 5.0, 4.0 ]
+posy  = [ 2.0, 3.0, 3.0, 3.8,   1.0, 0.0, 1.0, 1.2 ]
+times = [ 0, 1, 2, 3,           7, 8, 9, 10 ]
+
+N = 25
+TMax = 12
+dt = TMax / N
+
+def index(time):
+    return int(time / dt)
+
+x, y = [0] * N, [0] * N
+vx, vy = [0] * N, [0] * N
+
+x[0] = posx[0] + g.N(0, 0.01)
+y[0] = posy[0] + g.N(0, 0.01)
+
+for i in range(1, N):
+    ax = g.N(0, 0.1)
+    ay = g.N(0, 0.1)
+    
+    vx[i] = vx[i-1] + ax*dt
+    vy[i] = vy[i-1] + ay*dt
+    
+    x[i] = x[i-1] + vx[i]*dt
+    y[i] = y[i-1] + vy[i]*dt
+
+# condition on being close to observations
+for i in range(0,len(times)):
+    t = times[i]
+    g.condition(x[index(t)], posx[i] + g.N(0, 0.02))
+    g.condition(y[index(t)], posy[i] + g.N(0, 0.02))
+   
+plt.plot(posx,posy,'r*--', alpha=0.5)
+ 
+trajectory = g.marginals(*(x + y))
+for i in range(1,25):
+    vals = trajectory.sample()
+    xs,ys = vals[0:N], vals[N:]
+    
+    plt.plot(xs, ys, '--', color='green', alpha=0.1)
+
+xmean = [ g.mean(xi) for xi in x ]
+ymean = [ g.mean(yi) for yi in y ]
+
+plt.plot(xmean, ymean, 'b-')
+plt.show()
+
+#%% A distribution over closed loops
+
+g = Infer()
+
+N = 25
+dt = 1
+
+x, y = [0] * N, [0] * N
+vx, vy = [0] * N, [0] * N
+
+x[0] = 0.0 + g.N(0, 0.01)
+y[0] = 0.0 + g.N(0, 0.01)
+
+# simulate some trajectories
+for i in range(1, N):
+    ax = g.N(0, 0.01)
+    ay = g.N(0, 0.01)
+    
+    vx[i] = vx[i-1] + ax*dt
+    vy[i] = vy[i-1] + ay*dt
+    
+    x[i] = x[i-1] + vx[i]*dt
+    y[i] = y[i-1] + vy[i]*dt
+
+# condition that trajectories return to their origin
+g.condition(x[N-1], x[0])
+g.condition(y[N-1], y[0])
+
+trajectory = g.marginals(*(x + y))
+for i in range(1,25):
+    vals = trajectory.sample()
+    xs,ys = vals[0:N], vals[N:]
+    
+    plt.plot(xs, ys, '-', alpha=0.25)
+
+plt.show()
+    
