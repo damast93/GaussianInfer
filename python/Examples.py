@@ -156,3 +156,26 @@ plt.plot(xs, means, 'red')
 # Standard deviation ± 3sigma
 stds = np.array([ np.sqrt(np.abs(g.variance(y))) for y in ys ])
 plt.plot(xs, means + 3*stds, 'blue', xs, means - 3*stds, 'blue')
+plt.show()
+
+#%% GP with periodic kernel over closed loops
+# see https://www.cs.toronto.edu/~duvenaud/cookbook/
+
+g = Infer()
+
+# periodic kernel
+p,l,sigmasq = 0.5, 1, 1
+K = lambda x,y: sigmasq * np.exp(-2*(np.sin(np.pi*np.abs(x-y)/p)/l)**2)
+
+# build GP prior
+N = 100
+ts = np.linspace(0, 1, N)
+xs = g.from_dist(gp(ts, K))
+ys = g.from_dist(gp(ts, K))
+
+# plot sample functions
+trajectory = g.marginals(*(xs+ys))
+for i in range(5):
+    samples = trajectory.sample()
+    x, y = samples[:N], samples[N:]
+    plt.plot(x,y,alpha=0.5)
