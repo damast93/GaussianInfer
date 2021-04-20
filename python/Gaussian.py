@@ -53,7 +53,6 @@ class Gauss:
     def then(self,other):
         return other.dot(self)
 
-    
     # cond_last : (a -> n + k) -> (a + k -> n)
     def cond_last(self, k):
         return self.then(swap(self.cod - k,k)).cond(k)

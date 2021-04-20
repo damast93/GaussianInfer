@@ -7,7 +7,7 @@ import Gaussian as G
 g = Infer()
 
 # rbf kernel
-rbf = lambda x,y: -0.2 * np.exp(-(x-y)**2)
+rbf = lambda x,y: 0.2 * np.exp(-(x-y)**2)
 
 def gp(xs, kernel):
     K = [[ kernel(x1,x2) for x1 in xs] for x2 in xs ]

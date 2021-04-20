@@ -23,7 +23,7 @@ let bayesian_regression_example() =
     let regression_line = Chart.Line [ for x in xs -> (x, infer.Mean(f(x))) ]
     
     let regression_line_sample() =
-        let sample = infer.Marginals [ a; b ] |> Gaussian.sample 
+        let sample = Gaussian.sampler (infer.Marginals [ a; b ]) ()
         let a0, b0 = sample.[0,0], sample.[1,0]
         Chart.Line [ for x in xs -> x, a0*x + b0 ]
 
@@ -36,10 +36,10 @@ let gp_example() =
     let xs = [ -5.0 .. 0.1 .. 5.0 ]
     let observations = [(20, 1.0); (40, 2.0); (60, 3.0); (80, 0.0)]
 
-    let rbf x y = -0.2 * exp(-(x-y)*(x-y))
+    // rbf kernel
+    let rbf x y = 0.2 * exp(-(x-y)*(x-y))
 
     let ys = infer.FromDist {
-        dim   = xs.Length
         mu    = matrix [ for x in xs -> [ 0.0 ] ]
         sigma = matrix [ for x in xs -> [ for y in xs -> rbf x y ]] 
       }
@@ -50,7 +50,12 @@ let gp_example() =
     let points = Chart.Point [ for i, y in observations -> (xs.[i], y) ]
     let regressionLine = Chart.Line [ for x, y in List.zip xs ys -> (x, infer.Mean y) ] 
 
-    Chart.Combine [points; regressionLine] |> Chart.Show
+    let sampler = infer.Marginals(ys) |> Gaussian.sampler
+    let sample_graph() = 
+        let graph = sampler()
+        Chart.Line [ for x, y in List.zip xs (graph.AsColumnMajorArray() |> List.ofSeq) -> (x, y) ] 
+
+    Chart.Combine  ([points; regressionLine]  @ [ for i in 1..10 -> sample_graph() ]) |> Chart.Show
 
 bayesian_regression_example()
 gp_example()

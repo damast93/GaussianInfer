@@ -2,13 +2,13 @@
 
 open MathNet.Numerics.LinearAlgebra
 
-type Gaussian = { dim : int; mu : Matrix<float> ; sigma : Matrix<float> }
+type Gaussian = { mu : Matrix<float> ; sigma : Matrix<float> }
 
 module Gaussian = 
    val empty : Gaussian
    val normal : float -> float -> Gaussian
    val tensor : Gaussian -> Gaussian -> Gaussian
-   val sample : Gaussian -> Matrix<float>
+   val sampler : Gaussian -> (unit -> Matrix<float>)
 
 [<Sealed>]
 type rv = 
