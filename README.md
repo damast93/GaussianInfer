@@ -123,7 +123,7 @@ f(2) =.= 1.0
 
 cannot be satisfied by *any* linear function `f`, hence inference should fail (this can be derived algebraically using the paper). In our implementation, we employ SVD and an explicit formula using the Moore-Penrose pseudoinverse for conditioning, and try to check the support conditions manually.
 
-Nonetheless, the support condition is highly susceptible to rounding errors: Small perturbations will make the covariance matrix regular. This indicates the importance of an algebraic treatment like in our paper.
+Nonetheless, the support condition is highly [susceptible](https://scicomp.stackexchange.com/questions/12979/testing-if-a-matrix-is-positive-semi-definite/12984) to rounding errors: Small perturbations will make the covariance matrix regular. This indicates the importance of an algebraic treatment like in our paper.
 
 # Further Examples
 
