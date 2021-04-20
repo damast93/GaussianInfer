@@ -1,8 +1,25 @@
 # Gaussian Infer
 
-Proof of concept implementation for a Gaussian programming language with exact first-order conditioning, as described in ["Compositional Semantics for Probabilistic Programs with Exact Conditioning"](https://arxiv.org/abs/2101.11351). 
+This is a proof of concept implementation for a small probabilistic programming language with a first-class exact conditioning operator. It is accompanying material to our paper ["Compositional Semantics for Probabilistic Programs with Exact Conditioning"](https://arxiv.org/abs/2101.11351). 
 
-We provide two implementations, one using Python+`numpy`, the other using F#+`MathNet.Numerics`.
+Our implementation provides a type for Gaussian random variables, which can be combined affine-linearly, that is they can be added and scaled but not multiplied. Random variables can be conditioned on equality on numbers or other random variables. For example, creating two standard normal variables and setting them equal
+
+```
+x = N(0,1)
+y = N(0,1)
+x =.= y
+```
+
+is equivalent to conditioning
+
+```
+x = N(0,1/2)
+y = x
+```
+
+This setup is sufficient to concisely express Gaussian process regression or Kálmán filters. 
+
+We provide two implementations, one using Python+`numpy`, the other one using F#+`MathNet.Numerics`.
 
 # Initial example: Gaussian regression
 
@@ -15,7 +32,7 @@ ys = [-3.5, -6.4, -4.0, -8.1, -11.0]
 
 plt.plot(xs,ys,'ro')
 
-# make Gaussian variables for slope and y-intercept
+# make Gaussian random variables (prior) for slope and y-intercept
 a = g.N(0,10)
 b = g.N(0,10)
 f = lambda x: a*x + b
@@ -35,18 +52,18 @@ plt.show()
 
 # Structure
 
-The implementation concerns an abstract type `rv` of Gaussian random variables, which can be combined linearly
+As F# is statically typed, we can inspect the relevant type signatures of the implementation. The core ingredient is an abstract type `rv` of Gaussian random variables, which can be combined linearly
 
 ```f#
 type rv = 
     static member ( + ) : rv * rv -> rv       // sum of random variables
     static member ( * ) : float * rv -> rv    // scaling only with constants
-    static member ( * ) : rv * float -> rv
+    static member ( * ) : rv * float -> rv    // symmetrical ...
     static member FromConstant : float -> rv  // numbers as constant random variables
     (...)
 ```
 
-The inference engine maintains a prior over all random variables. New variables can be allocated using the `Normal` method and can be conditioned on equality.
+The inference engine maintains a prior over all random variables. New variables can be allocated using the `Normal` method, and variables can be conditioned on equality using the `Condition` method.
 
 ```F#
 type Infer =
@@ -57,10 +74,9 @@ type Infer =
     (...)
 ```
 
- The typed version of the Gaussian regression examples reads
+ The typed version of the Gaussian regression example reads
 
 ```F#
-open MathNet.Numerics.LinearAlgebra
 open FSharp.Charting
 open Infer
 
@@ -89,32 +105,47 @@ let bayesian_regression_example() =
 
 # Implementation
 
-The Python implementation features a class `Gauss` which represents an affine-linear map with Gaussian noise. This is a morphism in the category **Gauss** described by [[Fritz'20]](https://www.sciencedirect.com/science/article/abs/pii/S0001870820302656), and functions like `then` and `tensor` are provided to compose Gaussian maps like in a symmetric monoidal category. The class `Infer` represents the inference engine.
+Some comments on the implementation and differences between the two versions. 
 
-In the F# implementation, we do not model full Gaussian maps but only distributions. For conditioning of Gaussians, we directly implement the explicit formula from [Fritz'20] using the Moore-Penrose Pseudoinverse. Of course, in realistic code, you don't really want to compute inverses or Schur complements.
+The Python implementation features a class `Gauss` which represents an affine-linear map with Gaussian noise. This is precisely a morphism in the category **Gauss** described by [[Fritz'20]](https://www.sciencedirect.com/science/article/abs/pii/S0001870820302656), and functions like `then` and `tensor` are provided to allow composition of Gaussian maps like in a symmetric monoidal category. All formulas directly match the paper. The class `Infer` represents the inference engine. The F# implementation, apart from being statically typed, is more minimalistic: We do not model full Gaussian maps but only the distribution part which is required for performing inference.
+
+## Numerics
+
+In practice, in order to condition Gaussian variables one may compute a [Cholesky decomposition](https://en.wikipedia.org/wiki/Cholesky_decomposition) of the covariance matrix (e.g. [(2.25)](http://www.gaussianprocess.org/gpml/chapters/RW.pdf)). This is efficient and works well if the covariance matrix in question is positive definite (regular); one may also make observations slightly noisy, which corresponds to adding a small diagonal perturbation to the covariance matrix, making it positive definite. 
+
+We don't do this here, as our paper is precisely interested in the positive *semi*-definite case. Consider the linear regression example from before, then the noiseless observations
+
+```
+f(0) =.= 0.0
+f(1) =.= 1.0
+f(2) =.= 1.0
+```
+
+cannot be satisfied by *any* linear function `f`, hence inference should fail (this can be derived algebraically using the paper). In our implementation, we employ SVD and an explicit formula using the Moore-Penrose pseudoinverse for conditioning, and try to check the support conditions manually.
+
+Nonetheless, the support condition is highly susceptible to rounding errors: Small perturbations will make the covariance matrix regular. This indicates the importance of an algebraic treatment like in our paper.
 
 # Further Examples
 
 ## Kálmán filter
 
-We implement a 1-dimensional [Kálmán filter](https://en.wikipedia.org/wiki/Kalman_filter) for predicting the movement of some object, say a plane, from noisy measurements. 
+We show a 1-dimensional [Kálmán filter](https://en.wikipedia.org/wiki/Kalman_filter) for predicting the movement of some object, say a plane, from noisy measurements. 
 
 ```python
 g = Infer()
 
 xs = [ 1.0, 3.4, 2.7, 3.2, 5.8, 14.0, 18.0, 11.7, 19.5, 19.2]
 
-x = [0] * len(xs)
-v = [0] * len(xs)
-
-# Initial parameters
+# Initialize positions and velocities
+N = len(xs)
+x, v = [0] * N, [0] * N
 x[0] = xs[0] + g.N(0,1)
 v[0] = 1.0 + g.N(0,10)
 
-for i in range(1,len(xs)):
+for i in range(1,N):
     # Predict movement 
     x[i] = x[i-1] + v[i-1]
-    v[i] = v[i-1] + g.N(0,0.75)
+    v[i] = v[i-1] + g.N(0,0.75) # Random change to velocity 
     
     # Make noisy observations
     g.condition(x[i] + g.N(0,1),xs[i])
@@ -125,13 +156,17 @@ plt.plot([ g.mean(x[i]) for i in range(len(xs)) ],'g')
 
 ![1D Kalman filter](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_kalman.png)
 
+This is easily adapted to a 2-dimensional version, and changes to accelerations etc.
+
+![2D Kalman filter](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_kalman2.png)
+
 ## Gaussian Process Regression (Kriging)
 
-We write [Gaussian process regression](https://en.wikipedia.org/wiki/Kriging) using the [rbf kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel):
+We showcase [Gaussian process regression](https://en.wikipedia.org/wiki/Kriging) using the [rbf kernel](https://en.wikipedia.org/wiki/Radial_basis_function_kernel):
 
 ```python
 # rbf kernel
-rbf = lambda x,y: -0.2 * np.exp(-(x-y)**2)
+rbf = lambda x,y: 0.2 * np.exp(-(x-y)**2)
 
 def gp(xs, kernel):
     K = [[ kernel(x1,x2) for x1 in xs] for x2 in xs ]

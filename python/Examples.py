@@ -81,15 +81,15 @@ N = 25
 TMax = 12
 dt = TMax / N
 
-def index(time):
-    return int(time / dt)
+def index(time): return int(time / dt)
 
-x, y = [0] * N, [0] * N
+# initialize positions and velocities
+x, y   = [0] * N, [0] * N
 vx, vy = [0] * N, [0] * N
-
 x[0] = posx[0] + g.N(0, 0.01)
 y[0] = posy[0] + g.N(0, 0.01)
 
+# simulate movement
 for i in range(1, N):
     ax = g.N(0, 0.1)
     ay = g.N(0, 0.1)
@@ -100,7 +100,7 @@ for i in range(1, N):
     x[i] = x[i-1] + vx[i]*dt
     y[i] = y[i-1] + vy[i]*dt
 
-# condition on being close to observations
+# condition on observations
 for i in range(0,len(times)):
     t = times[i]
     g.condition(x[index(t)], posx[i] + g.N(0, 0.02))
