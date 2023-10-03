@@ -91,6 +91,9 @@ class Infer:
     def eval_term_rec(self, term):
         n = self.n
         
+        if type(term) == int or type(term) == float:
+            return (np.zeros((1,n)), term)
+        
         if term.typ == 'const':
             return (np.zeros((1,n)), term.r)
         elif term.typ == 'var':
