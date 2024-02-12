@@ -50,6 +50,18 @@ plt.show()
 
 ![Gaussian regression](https://raw.githubusercontent.com/damast93/GaussianInfer/master/plot_regression.png)
 
+# A DSL for Gaussians
+
+We have added a decorator `gauss` which constructs a `Gauss` morphism from a function using a specialized form of normalization-by-evaluation.
+
+```python
+# Denotes a morphism 1 -> 2
+@gauss
+def ex(x):
+    y = x + 5*normal()
+    return y, x
+```
+
 # Structure
 
 As F# is statically typed, we can inspect the relevant type signatures of the implementation. The core ingredient is an abstract type `rv` of Gaussian random variables, which can be combined linearly
