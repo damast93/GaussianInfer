@@ -49,18 +49,12 @@ class Term:
         return Term('mul', t=self, r=float(other))
     
     def __str__(self):
-        if self.typ == 'const':
-            return str(self.r)
-        elif self.typ == 'var':
-            return "Var@%i" % self.name
-        elif self.typ == 'normal':
-            return "Normal@%i" % self.name
-        elif self.typ == 'add':
-            return str(self.s) + ' + ' + str(self.t)
-        elif self.typ == 'mul':
-            return str(self.r) + '*(' + str(self.t) + ')'
-        else:
-            raise Exception("Bad case")
+        if   self.typ == 'const': return str(self.r)
+        elif self.typ == 'var': return "Var@%i" % self.name
+        elif self.typ == 'normal': return "Normal@%i" % self.name
+        elif self.typ == 'add': return str(self.s) + ' + ' + str(self.t)
+        elif self.typ == 'mul': return str(self.r) + '*(' + str(self.t) + ')'
+        else: raise Exception("Bad case")
             
     def _repr_pretty_(self, p, cycle):
         p.text(str(self) if not cycle else '...')
@@ -75,22 +69,7 @@ def collect_normals(term):
 
 def normal():
     return Term.normal(gensym())
-
-    
-def eval_term_old(var_idx, term):
-    n = len(var_idx)
-    
-    if term.typ == 'const':
-        return Gauss.Gauss(n, 1, None, term.r, None)
-    elif term.typ == 'var':
-        proj = np.zeros((1,n))
-        proj[0,var_idx[term.name]] = 1.0
-        return Gauss.Gauss(n, 1, proj, None, None)
-    elif term.typ == 'normal':
-        return Gauss.Gauss(n, 1, None, None, np.array([[1.0]]))
    
-# n variables, m normals -> Gauss(m,1), Gauss(n,1)     
-
 def proj(n,i):
     p = np.zeros((1,n))
     p[0,i] = 1.0
